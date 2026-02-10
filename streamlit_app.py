@@ -58,6 +58,9 @@ def convert_financial_columns(df):
             df["Año de Corte"].astype(str).str.replace(r"[^\d]", "", regex=True),
             errors="coerce"
         )
+
+    st.write("Valores nulos después de conversión:")
+    st.dataframe(st.session_state.clean_df[financial_cols].isna().sum())
     
     return df
 
@@ -170,9 +173,6 @@ if df is not None:
             
             st.write("Tipos de datos actuales:")
             st.dataframe(st.session_state.clean_df.dtypes)
-
-    st.write("Valores nulos después de conversión:")
-    st.dataframe(st.session_state.clean_df[financial_cols].isna().sum())
     
     st.markdown("---")
     st.subheader("🧹 Limpieza de Datos")

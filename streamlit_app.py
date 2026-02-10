@@ -81,7 +81,7 @@ def load_url(url):
         return pd.read_csv(StringIO(response.text))
     return None
 
-def detect_outliers_iqr(df):
+def detect_outliers_iqr(df, multiplier=1.5):
     numeric_cols = df.select_dtypes(include=np.number).columns
     outlier_info = {}
 
@@ -89,31 +89,42 @@ def detect_outliers_iqr(df):
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
-        lower = Q1 - 1.5 * IQR
-        upper = Q3 + 1.5 * IQR
+
+        lower = Q1 - multiplier * IQR
+        upper = Q3 + multiplier * IQR
 
         mask = (df[col] < lower) | (df[col] > upper)
+
         outlier_info[col] = {
             "lower": lower,
             "upper": upper,
-            "count": mask.sum()
+            "count": int(mask.sum())
         }
 
     return outlier_info
 
-def treat_outliers(df):
+
+def treat_outliers(df, multiplier=1.5):
     numeric_cols = df.select_dtypes(include=np.number).columns
 
     for col in numeric_cols:
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
-        lower = Q1 - 1.5 * IQR
-        upper = Q3 + 1.5 * IQR
+
+        lower = Q1 - multiplier * IQR
+        upper = Q3 + multiplier * IQR
 
         df[col] = np.clip(df[col], lower, upper)
 
     return df
+
+def apply_log_transform(df, columns):
+    for col in columns:
+        if col in df.columns:
+            df[f"{col}_LOG"] = np.log1p(df[col])
+    return df
+
 
 def impute_data(df, method):
     numeric_cols = df.select_dtypes(include=np.number).columns
@@ -212,41 +223,85 @@ if df is not None:
     # OUTLIERS
     # =====================================
 
-    st.markdown("### Detección de Outliers (IQR)")
+    st.markdown("### Detección y Tratamiento de Outliers (IQR)")
 
-    if st.checkbox("Detectar outliers"):
-
-        outlier_info = detect_outliers_iqr(st.session_state.clean_df)
-
+    if st.checkbox("Activar módulo de outliers"):
+    
+        multiplier = st.slider(
+            "Multiplicador IQR (más alto = menos agresivo)",
+            min_value=1.5,
+            max_value=5.0,
+            value=3.0,
+            step=0.5
+        )
+    
+        outlier_info = detect_outliers_iqr(
+            st.session_state.clean_df,
+            multiplier=multiplier
+        )
+    
         st.write("Cantidad de outliers por variable:")
         outlier_df = pd.DataFrame(outlier_info).T
         st.dataframe(outlier_df[["count"]])
-
-        # Visualización
+    
         numeric_cols = st.session_state.clean_df.select_dtypes(include=np.number).columns
-
-        selected_col = st.selectbox("Selecciona variable para visualizar:", numeric_cols)
-
+    
+        selected_col = st.selectbox(
+            "Selecciona variable para visualizar:",
+            numeric_cols
+        )
+    
         fig = px.box(
             st.session_state.clean_df,
             y=selected_col,
             title=f"Boxplot - {selected_col}",
-            points="outliers"  # muestra los outliers resaltados
+            points="outliers"
         )
-        
-        fig.update_layout(
-            xaxis_title="",
-            yaxis_title=selected_col,
-            template="plotly_white"
-        )
-        
+    
         st.plotly_chart(fig, use_container_width=True)
+    
+        action = st.selectbox(
+            "Selecciona acción:",
+            [
+                "Solo detectar",
+                "Winsorizar",
+                "Eliminar extremos extremos (5x IQR)",
+                "Aplicar transformación log"
+            ]
+        )
+    
+        if st.button("Aplicar acción"):
+    
+            if action == "Winsorizar":
+                st.session_state.clean_df = treat_outliers(
+                    st.session_state.clean_df,
+                    multiplier=multiplier
+                )
+                st.success("Winsorización aplicada correctamente.")
+    
+            elif action == "Eliminar extremos extremos (5x IQR)":
+                info_extreme = detect_outliers_iqr(
+                    st.session_state.clean_df,
+                    multiplier=5
+                )
+    
+                for col in numeric_cols:
+                    lower = info_extreme[col]["lower"]
+                    upper = info_extreme[col]["upper"]
+                    st.session_state.clean_df = st.session_state.clean_df[
+                        (st.session_state.clean_df[col] >= lower) &
+                        (st.session_state.clean_df[col] <= upper)
+                    ]
+    
+                st.success("Extremos extremos eliminados.")
+    
+            elif action == "Aplicar transformación log":
+                st.session_state.clean_df = apply_log_transform(
+                    st.session_state.clean_df,
+                    numeric_cols
+                )
+                st.success("Transformación log aplicada.")
 
-
-        # Botón para tratar
-        if st.button("Tratar outliers (Winsorización)"):
-            st.session_state.clean_df = treat_outliers(st.session_state.clean_df)
-            st.success("Outliers tratados correctamente.")
 
     # =====================================
     # DATASET FINAL

@@ -30,6 +30,32 @@ data_source = st.sidebar.radio(
 # FUNCIONES
 # =========================================
 
+
+def convert_financial_columns(df):
+    financial_cols = [
+        "INGRESOS OPERACIONALES",
+        "GANANCIA (PÉRDIDA)",
+        "TOTAL ACTIVOS",
+        "TOTAL PASIVOS",
+        "TOTAL PATRIMONIO"
+    ]
+    
+    for col in financial_cols:
+        if col in df.columns:
+            df[col] = (
+                df[col]
+                .str.replace(".", "", regex=False)  # quitar separador de miles
+                .str.replace(",", ".", regex=False)  # si hubiera coma decimal
+            )
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    
+    # Convertir año
+    if "Año de Corte" in df.columns:
+        df["Año de Corte"] = pd.to_numeric(df["Año de Corte"], errors="coerce")
+    
+    return df
+
+
 @st.cache_data
 def load_csv(file):
     return pd.read_csv(file)
@@ -126,6 +152,19 @@ if df is not None:
     st.subheader("Vista previa")
     st.dataframe(st.session_state.clean_df.head())
 
+    st.markdown("### Normalización de Tipos de Datos")
+
+    if st.checkbox("Convertir columnas financieras a formato numérico"):
+        if st.button("Aplicar conversión de tipos"):
+            st.session_state.clean_df = convert_financial_columns(
+                st.session_state.clean_df
+            )
+            st.success("Columnas financieras convertidas correctamente.")
+            
+            st.write("Tipos de datos actuales:")
+            st.dataframe(st.session_state.clean_df.dtypes)
+
+    
     st.markdown("---")
     st.subheader("🧹 Limpieza de Datos")
 

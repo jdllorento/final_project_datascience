@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import requests
 from io import StringIO
-import matplotlib.pyplot as plt
+import plotly.express as px
+
 
 # =========================================
 # CONFIGURACIÓN GENERAL
@@ -178,10 +179,21 @@ if df is not None:
 
         selected_col = st.selectbox("Selecciona variable para visualizar:", numeric_cols)
 
-        fig, ax = plt.subplots()
-        ax.boxplot(st.session_state.clean_df[selected_col])
-        ax.set_title(f"Boxplot - {selected_col}")
-        st.pyplot(fig)
+        fig = px.box(
+            st.session_state.clean_df,
+            y=selected_col,
+            title=f"Boxplot - {selected_col}",
+            points="outliers"  # muestra los outliers resaltados
+        )
+        
+        fig.update_layout(
+            xaxis_title="",
+            yaxis_title=selected_col,
+            template="plotly_white"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
 
         # Botón para tratar
         if st.button("Tratar outliers (Winsorización)"):

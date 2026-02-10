@@ -42,18 +42,25 @@ def convert_financial_columns(df):
     
     for col in financial_cols:
         if col in df.columns:
-            df[col] = (
-                df[col]
-                .str.replace(".", "", regex=False)  # quitar separador de miles
-                .str.replace(",", ".", regex=False)  # si hubiera coma decimal
-            )
+            
+            # Convertir a string por seguridad
+            df[col] = df[col].astype(str)
+            
+            # Eliminar cualquier cosa que no sea número o signo negativo
+            df[col] = df[col].str.replace(r"[^\d\-]", "", regex=True)
+            
+            # Convertir a numérico
             df[col] = pd.to_numeric(df[col], errors="coerce")
     
     # Convertir año
     if "Año de Corte" in df.columns:
-        df["Año de Corte"] = pd.to_numeric(df["Año de Corte"], errors="coerce")
+        df["Año de Corte"] = pd.to_numeric(
+            df["Año de Corte"].astype(str).str.replace(r"[^\d]", "", regex=True),
+            errors="coerce"
+        )
     
     return df
+
 
 
 @st.cache_data
@@ -164,6 +171,8 @@ if df is not None:
             st.write("Tipos de datos actuales:")
             st.dataframe(st.session_state.clean_df.dtypes)
 
+    st.write("Valores nulos después de conversión:")
+    st.dataframe(st.session_state.clean_df[financial_cols].isna().sum())
     
     st.markdown("---")
     st.subheader("🧹 Limpieza de Datos")

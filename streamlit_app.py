@@ -574,44 +574,44 @@ else:
     # =====================================================
 
     with tab2:
-    numeric_df = df_eda.select_dtypes(include=np.number).copy()
-    
-    # Eliminamos duplicados de columnas si los hubiera por error previo
-    numeric_df = numeric_df.loc[:, ~numeric_df.columns.duplicated()]
-    
-    if len(numeric_df.columns) > 1:
-        st.subheader("Matriz de Correlación")
-        corr = numeric_df.corr()
-        fig_corr = px.imshow(corr, text_auto=True, title="Heatmap de Correlación")
-        st.plotly_chart(fig_corr, use_container_width=True)
-
-        st.subheader("Relación entre variables")
-        col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
-        col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
-
-        # --- SOLUCIÓN AL ERROR ---
-        if col_x == col_y:
-            # Si son iguales, creamos un DF con una sola columna y referenciamos el nombre
-            df_scatter = numeric_df[[col_x]].dropna()
-            fig_scatter = px.scatter(
-                df_scatter, 
-                x=col_x, 
-                y=col_x, # Plotly acepta el mismo nombre de columna aquí
-                trendline="ols"
-            )
-        else:
-            # Si son distintas, pasamos ambas
-            df_scatter = numeric_df[[col_x, col_y]].dropna()
-            fig_scatter = px.scatter(
-                df_scatter, 
-                x=col_x, 
-                y=col_y, 
-                trendline="ols"
-            )
+        numeric_df = df_eda.select_dtypes(include=np.number).copy()
         
-        st.plotly_chart(fig_scatter, use_container_width=True)
-    else:
-        st.info("Se necesitan al menos dos variables numéricas.")
+        # Eliminamos duplicados de columnas si los hubiera por error previo
+        numeric_df = numeric_df.loc[:, ~numeric_df.columns.duplicated()]
+        
+        if len(numeric_df.columns) > 1:
+            st.subheader("Matriz de Correlación")
+            corr = numeric_df.corr()
+            fig_corr = px.imshow(corr, text_auto=True, title="Heatmap de Correlación")
+            st.plotly_chart(fig_corr, use_container_width=True)
+    
+            st.subheader("Relación entre variables")
+            col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
+            col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
+    
+            # --- SOLUCIÓN AL ERROR ---
+            if col_x == col_y:
+                # Si son iguales, creamos un DF con una sola columna y referenciamos el nombre
+                df_scatter = numeric_df[[col_x]].dropna()
+                fig_scatter = px.scatter(
+                    df_scatter, 
+                    x=col_x, 
+                    y=col_x, # Plotly acepta el mismo nombre de columna aquí
+                    trendline="ols"
+                )
+            else:
+                # Si son distintas, pasamos ambas
+                df_scatter = numeric_df[[col_x, col_y]].dropna()
+                fig_scatter = px.scatter(
+                    df_scatter, 
+                    x=col_x, 
+                    y=col_y, 
+                    trendline="ols"
+                )
+            
+            st.plotly_chart(fig_scatter, use_container_width=True)
+        else:
+            st.info("Se necesitan al menos dos variables numéricas.")
 
 
     # =====================================================

@@ -31,6 +31,38 @@ data_source = st.sidebar.radio(
 # =========================================
 
 
+def create_financial_features(df):
+
+    if (
+        "GANANCIA (PÉRDIDA)" in df.columns and
+        "INGRESOS OPERACIONALES" in df.columns
+    ):
+        df["MARGEN_NETO"] = (
+            df["GANANCIA (PÉRDIDA)"] /
+            df["INGRESOS OPERACIONALES"]
+        )
+
+    if (
+        "TOTAL PASIVOS" in df.columns and
+        "TOTAL ACTIVOS" in df.columns
+    ):
+        df["RATIO_ENDEUDAMIENTO"] = (
+            df["TOTAL PASIVOS"] /
+            df["TOTAL ACTIVOS"]
+        )
+
+    if (
+        "GANANCIA (PÉRDIDA)" in df.columns and
+        "TOTAL ACTIVOS" in df.columns
+    ):
+        df["ROA"] = (
+            df["GANANCIA (PÉRDIDA)"] /
+            df["TOTAL ACTIVOS"]
+        )
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    return df
+
+
 def convert_financial_columns(df):
     financial_cols = [
         "INGRESOS OPERACIONALES",
@@ -317,6 +349,29 @@ if df is not None:
                     numeric_cols
                 )
                 st.success("Transformación log aplicada.")
+
+
+    # =====================================
+    # FEATURE ENGINEERING
+    # =====================================
+    
+    st.markdown("### 🧠 Feature Engineering")
+    
+    if st.checkbox("Crear indicadores financieros"):
+    
+        if st.button("Generar nuevas variables"):
+            st.session_state.clean_df = create_financial_features(
+                st.session_state.clean_df
+            )
+            st.success("Indicadores financieros creados correctamente.")
+    
+            st.write("Nuevas columnas agregadas:")
+            st.write(
+                [
+                    col for col in st.session_state.clean_df.columns
+                    if col in ["MARGEN_NETO", "RATIO_ENDEUDAMIENTO", "ROA"]
+                ]
+            )
 
 
     # =====================================

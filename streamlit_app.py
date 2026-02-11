@@ -595,7 +595,6 @@ if df is not None:
                 df_scatter,
                 x=col_x,
                 y=col_y,
-                trendline="ols",
                 title=f"Relación: {col_x} vs {col_y}"
             )
             

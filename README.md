@@ -1,6 +1,7 @@
 # final_project_datascience
 
 *Link de streamlit:* https://finalprojectdatascience-aazr858jvxs4dfhyqgbfmr.streamlit.app
+*Token IA:* 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
 
 - Juan Diego Llorente
 - Sara Valentina Cortes

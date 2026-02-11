@@ -410,29 +410,27 @@ if df is not None:
     st.markdown("---")
     st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
     
-    # Solo una vez y con copia limpia
     if "clean_df" in st.session_state:
+        # 1. Copiamos y aseguramos que no haya duplicados de entrada
         df_eda = st.session_state.clean_df.copy()
-        # Asegurar unicidad solo si es estrictamente necesario una vez
-        df_eda = df_eda.loc[:, ~df_eda.columns.duplicated()] 
-    else:
-        st.stop() # Detener si no hay datos
+        df_eda = df_eda.loc[:, ~df_eda.columns.duplicated()]
         
-        # 🔎 Verificación defensiva extra
+        # 2. Solo si detectamos que Pandas aún ve duplicados, aplicamos el renombrado
         if df_eda.columns.duplicated().any():
-            st.error("Existen columnas duplicadas después de la normalización.")
-            st.write(df_eda.columns[df_eda.columns.duplicated()])
-    
-    
-        df_eda = make_columns_unique(df_eda)
+            df_eda = make_columns_unique(df_eda)
+    else:
+        st.info("Esperando carga de datos...")
+        st.stop() 
+
+# A partir de aquí sigue el resto de tu código de filtros...
     
         # ==============================
         # FILTROS GLOBALES DINÁMICOS
         # ==============================
     
-        st.subheader("🎛️ Filtros Globales")
+    st.subheader("🎛️ Filtros Globales")
     
-        col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
     # --------------------------
     # FILTRO CATEGÓRICO
@@ -574,9 +572,8 @@ if df is not None:
     # =====================================================
 
     with tab2:
+        # 1. Obtenemos solo las numéricas y eliminamos cualquier duplicado de nombre previo
         numeric_df = df_eda.select_dtypes(include=np.number).copy()
-        
-        # Eliminamos duplicados de columnas si los hubiera por error previo
         numeric_df = numeric_df.loc[:, ~numeric_df.columns.duplicated()]
         
         if len(numeric_df.columns) > 1:
@@ -589,25 +586,22 @@ if df is not None:
             col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
             col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
     
-            # --- SOLUCIÓN AL ERROR ---
-            if col_x == col_y:
-                # Si son iguales, creamos un DF con una sola columna y referenciamos el nombre
-                df_scatter = numeric_df[[col_x]].dropna()
-                fig_scatter = px.scatter(
-                    df_scatter, 
-                    x=col_x, 
-                    y=col_x, # Plotly acepta el mismo nombre de columna aquí
-                    trendline="ols"
-                )
-            else:
-                # Si son distintas, pasamos ambas
-                df_scatter = numeric_df[[col_x, col_y]].dropna()
-                fig_scatter = px.scatter(
-                    df_scatter, 
-                    x=col_x, 
-                    y=col_y, 
-                    trendline="ols"
-                )
+            # --- LA SOLUCIÓN DEFINITIVA ---
+            # Creamos una lista de las columnas que necesitamos sin repetir nombres
+            cols_to_use = list(set([col_x, col_y])) 
+            
+            # Extraemos el dataframe con columnas ÚNICAS
+            df_scatter = numeric_df[cols_to_use].dropna()
+    
+            # px.scatter puede usar el mismo nombre de columna para x e y 
+            # siempre que el DataFrame de entrada no tenga la columna repetida físicamente.
+            fig_scatter = px.scatter(
+                df_scatter,
+                x=col_x,
+                y=col_y,
+                trendline="ols",
+                title=f"Relación: {col_x} vs {col_y}"
+            )
             
             st.plotly_chart(fig_scatter, use_container_width=True)
         else:

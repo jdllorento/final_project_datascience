@@ -654,5 +654,5 @@ else:
 
 
 
-else:
-    st.info("Esperando carga de datos...")
+    else:
+        st.info("Esperando carga de datos...")

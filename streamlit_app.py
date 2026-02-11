@@ -387,5 +387,237 @@ if df is not None:
     col2.metric("Columnas", st.session_state.clean_df.shape[1])
     col3.metric("Valores Nulos", st.session_state.clean_df.isna().sum().sum())
 
+        # =====================================================
+    # MÓDULO 2 - VISUALIZACIÓN DINÁMICA (EDA)
+    # =====================================================
+
+    st.markdown("---")
+    st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
+
+    df_eda = st.session_state.clean_df.copy()
+
+    # ==============================
+    # FILTROS GLOBALES DINÁMICOS
+    # ==============================
+
+    st.subheader("🎛️ Filtros Globales")
+
+    col1, col2, col3 = st.columns(3)
+
+    # --------------------------
+    # FILTRO CATEGÓRICO
+    # --------------------------
+    with col1:
+        categorical_cols = df_eda.select_dtypes(include="object").columns.tolist()
+
+        selected_category_col = st.selectbox(
+            "Columna categórica",
+            options=["Ninguna"] + categorical_cols,
+            key="cat_filter"
+        )
+
+        if selected_category_col != "Ninguna":
+            category_values = df_eda[selected_category_col].dropna().unique()
+            selected_values = st.multiselect(
+                "Valores",
+                options=category_values,
+                key="cat_values"
+            )
+
+            if selected_values:
+                df_eda = df_eda[
+                    df_eda[selected_category_col].isin(selected_values)
+                ]
+
+    # --------------------------
+    # FILTRO NUMÉRICO
+    # --------------------------
+    with col2:
+        numeric_cols = df_eda.select_dtypes(include=np.number).columns.tolist()
+
+        selected_numeric_col = st.selectbox(
+            "Columna numérica",
+            options=["Ninguna"] + numeric_cols,
+            key="num_filter"
+        )
+
+        if selected_numeric_col != "Ninguna":
+            min_val = float(df_eda[selected_numeric_col].min())
+            max_val = float(df_eda[selected_numeric_col].max())
+
+            selected_range = st.slider(
+                "Rango",
+                min_value=min_val,
+                max_value=max_val,
+                value=(min_val, max_val),
+                key="num_range"
+            )
+
+            df_eda = df_eda[
+                (df_eda[selected_numeric_col] >= selected_range[0]) &
+                (df_eda[selected_numeric_col] <= selected_range[1])
+            ]
+
+    # --------------------------
+    # FILTRO TEMPORAL (si existe)
+    # --------------------------
+    with col3:
+        date_cols = df_eda.select_dtypes(include=["datetime64"]).columns.tolist()
+
+        if date_cols:
+            selected_date_col = st.selectbox(
+                "Columna fecha",
+                date_cols,
+                key="date_filter"
+            )
+
+            min_date = df_eda[selected_date_col].min()
+            max_date = df_eda[selected_date_col].max()
+
+            selected_dates = st.date_input(
+                "Rango fechas",
+                [min_date, max_date],
+                key="date_range"
+            )
+
+            if len(selected_dates) == 2:
+                df_eda = df_eda[
+                    (df_eda[selected_date_col] >= pd.to_datetime(selected_dates[0])) &
+                    (df_eda[selected_date_col] <= pd.to_datetime(selected_dates[1]))
+                ]
+
+    # =====================================================
+    # TABS DE EDA
+    # =====================================================
+
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Análisis Univariado",
+        "🔗 Análisis Bivariado",
+        "📈 Evolución Temporal"
+    ])
+
+    # =====================================================
+    # TAB 1 - UNIVARIADO
+    # =====================================================
+
+    with tab1:
+
+        st.subheader("Distribuciones")
+
+        numeric_cols = df_eda.select_dtypes(include=np.number).columns.tolist()
+
+        if numeric_cols:
+
+            selected_var = st.selectbox(
+                "Variable numérica",
+                numeric_cols,
+                key="uni_var"
+            )
+
+            chart_type = st.radio(
+                "Tipo de gráfico",
+                ["Histograma", "Boxplot"],
+                key="uni_chart"
+            )
+
+            if chart_type == "Histograma":
+                fig = px.histogram(
+                    df_eda,
+                    x=selected_var,
+                    nbins=30,
+                    title=f"Distribución de {selected_var}"
+                )
+            else:
+                fig = px.box(
+                    df_eda,
+                    y=selected_var,
+                    title=f"Boxplot de {selected_var}"
+                )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.info("No hay variables numéricas disponibles.")
+
+    # =====================================================
+    # TAB 2 - BIVARIADO + CORRELACIÓN
+    # =====================================================
+
+    with tab2:
+
+        numeric_df = df_eda.select_dtypes(include=np.number)
+
+        if len(numeric_df.columns) > 1:
+
+            st.subheader("Matriz de Correlación")
+
+            corr = numeric_df.corr()
+
+            fig_corr = px.imshow(
+                corr,
+                text_auto=True,
+                aspect="auto",
+                title="Heatmap de Correlación"
+            )
+
+            st.plotly_chart(fig_corr, use_container_width=True)
+
+            st.subheader("Relación entre variables")
+
+            col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
+            col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
+
+            fig_scatter = px.scatter(
+                df_eda,
+                x=col_x,
+                y=col_y,
+                trendline="ols"
+            )
+
+            st.plotly_chart(fig_scatter, use_container_width=True)
+
+        else:
+            st.info("Se necesitan al menos dos variables numéricas.")
+
+    # =====================================================
+    # TAB 3 - EVOLUCIÓN TEMPORAL
+    # =====================================================
+
+    with tab3:
+
+        date_cols = df_eda.select_dtypes(include=["datetime64"]).columns.tolist()
+
+        if date_cols:
+
+            selected_date_col = st.selectbox(
+                "Columna fecha",
+                date_cols,
+                key="time_date"
+            )
+
+            numeric_cols = df_eda.select_dtypes(include=np.number).columns.tolist()
+
+            selected_metric = st.selectbox(
+                "Métrica",
+                numeric_cols,
+                key="time_metric"
+            )
+
+            df_time = df_eda.sort_values(selected_date_col)
+
+            fig_line = px.line(
+                df_time,
+                x=selected_date_col,
+                y=selected_metric,
+                title=f"Evolución de {selected_metric}"
+            )
+
+            st.plotly_chart(fig_line, use_container_width=True)
+
+        else:
+            st.info("No existen columnas tipo fecha en el dataset.")
+
+
+
 else:
     st.info("Esperando carga de datos...")

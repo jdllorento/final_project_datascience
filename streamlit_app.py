@@ -223,7 +223,6 @@ elif data_source == "Cargar desde URL":
     if url:
         df = load_url(url)
 
-st.session_state.clean_df = make_columns_unique(st.session_state.clean_df)
 # =========================================
 # PROCESAMIENTO
 # =========================================
@@ -231,7 +230,7 @@ st.session_state.clean_df = make_columns_unique(st.session_state.clean_df)
 if df is not None:
 
     if "clean_df" not in st.session_state:
-        st.session_state.clean_df = df.copy()
+        st.session_state.clean_df = make_columns_unique(df.copy())
 
     st.success("Datos cargados correctamente ✔️")
 
@@ -573,45 +572,46 @@ if df is not None:
 
     with tab2:
 
-        numeric_df = df_eda.select_dtypes(include=np.number).copy()
-        numeric_df = make_columns_unique(numeric_df)
+    numeric_df = df_eda.select_dtypes(include=np.number).copy()
 
+    # 🔥 Garantizar unicidad UNA sola vez
+    numeric_df = numeric_df.loc[:, ~numeric_df.columns.duplicated()]
 
-        if len(numeric_df.columns) > 1:
+    if len(numeric_df.columns) > 1:
 
-            st.subheader("Matriz de Correlación")
+        st.subheader("Matriz de Correlación")
 
-            corr = numeric_df.corr()
+        corr = numeric_df.corr()
 
-            fig_corr = px.imshow(
-                corr,
-                text_auto=True,
-                aspect="auto",
-                title="Heatmap de Correlación"
-            )
+        fig_corr = px.imshow(
+            corr,
+            text_auto=True,
+            aspect="auto",
+            title="Heatmap de Correlación"
+        )
 
-            st.plotly_chart(fig_corr, use_container_width=True)
+        st.plotly_chart(fig_corr, use_container_width=True)
 
-            st.subheader("Relación entre variables")
+        st.subheader("Relación entre variables")
 
-            col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
-            col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
+        col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
+        col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
 
-            df_scatter = df_eda[[col_x, col_y]].dropna().copy()
-            df_scatter = make_columns_unique(df_scatter)
+        # 🔥 Usar numeric_df directamente (NO df_eda)
+        df_scatter = numeric_df[[col_x, col_y]].dropna()
 
-            fig_scatter = px.scatter(
-                df_scatter,
-                x=col_x,
-                y=col_y,
-                trendline="ols"
-            )
-                
+        fig_scatter = px.scatter(
+            df_scatter,
+            x=col_x,
+            y=col_y,
+            trendline="ols"
+        )
 
-            st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, use_container_width=True)
 
-        else:
-            st.info("Se necesitan al menos dos variables numéricas.")
+    else:
+        st.info("Se necesitan al menos dos variables numéricas.")
+
 
     # =====================================================
     # TAB 3 - EVOLUCIÓN TEMPORAL

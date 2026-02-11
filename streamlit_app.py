@@ -122,21 +122,37 @@ def treat_outliers(df, multiplier=1.5):
 def apply_log_transform(df, columns):
     for col in columns:
         if col in df.columns:
-            df[f"{col}_LOG"] = np.log1p(df[col])
+            df[f"{col}_LOG"] = np.where(
+                df[col] > 0,
+                np.log1p(df[col]),
+                np.nan
+            )
     return df
+
 
 
 def impute_data(df, method):
-    numeric_cols = df.select_dtypes(include=np.number).columns
 
+    numeric_cols = df.select_dtypes(include=np.number).columns
+    categorical_cols = df.select_dtypes(include="object").columns
+
+    # Imputar numéricas
     if method == "Media":
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+
     elif method == "Mediana":
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
+
     elif method == "Cero":
         df[numeric_cols] = df[numeric_cols].fillna(0)
 
+    # Imputar categóricas con moda
+    for col in categorical_cols:
+        if df[col].isna().sum() > 0:
+            df[col] = df[col].fillna(df[col].mode()[0])
+
     return df
+
 
 # =========================================
 # CARGA DE DATOS

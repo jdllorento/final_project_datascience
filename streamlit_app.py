@@ -31,6 +31,21 @@ data_source = st.sidebar.radio(
 # =========================================
 
 
+def make_columns_unique(df):
+        new_cols = []
+        counts = {}
+    
+        for col in df.columns:
+            if col in counts:
+                counts[col] += 1
+                new_cols.append(f"{col}_{counts[col]}")
+            else:
+                counts[col] = 0
+                new_cols.append(col)
+    
+        df.columns = new_cols
+        return df
+
 def create_financial_features(df):
 
     if (
@@ -406,21 +421,6 @@ if df is not None:
         st.error("Existen columnas duplicadas después de la normalización.")
         st.write(df_eda.columns[df_eda.columns.duplicated()])
 
-
-    def make_columns_unique(df):
-        new_cols = []
-        counts = {}
-    
-        for col in df.columns:
-            if col in counts:
-                counts[col] += 1
-                new_cols.append(f"{col}_{counts[col]}")
-            else:
-                counts[col] = 0
-                new_cols.append(col)
-    
-        df.columns = new_cols
-        return df
 
     df_eda = make_columns_unique(df_eda)
 

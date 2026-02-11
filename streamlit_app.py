@@ -5,7 +5,7 @@ import requests
 from io import StringIO
 import plotly.express as px
 
-
+from ai_module import get_ai_insights
 # =========================================
 # CONFIGURACIÓN GENERAL
 # =========================================
@@ -20,6 +20,7 @@ st.markdown("### Módulo 1: Ingesta y Procesamiento (ETL)")
 # =========================================
 
 st.sidebar.header("⚙️ Configuración")
+api_key = st.sidebar.text_input("Groq API Key", type="password", help="Consíguela en console.groq.com")
 
 data_source = st.sidebar.radio(
     "Seleccione la fuente de datos:",
@@ -509,6 +510,24 @@ if df is not None:
                     (df_eda[selected_date_col] >= pd.to_datetime(selected_dates[0])) &
                     (df_eda[selected_date_col] <= pd.to_datetime(selected_dates[1]))
                 ]
+    # =====================================================
+    # 🤖 NUEVO: SECCIÓN DE AI INSIGHTS
+    # =====================================================
+    st.divider()
+    st.header("🤖 Analista Virtual: AI-Driven Insights")
+    
+    if st.button("✨ Generar Insights con IA", use_container_width=True):
+        if not api_key:
+            st.warning("👈 Ingresa tu API Key en la barra lateral para continuar.")
+        else:
+            with st.spinner("Analizando tendencias, riesgos y oportunidades..."):
+                # Enviamos el df_eda que ya tiene aplicados todos los filtros previos
+                insights = get_ai_insights(df_eda, api_key)
+                
+                # Usamos st.info para que el texto sea "dinámico" y se vea bien en Dark Mode
+                st.info("### 📋 Informe del Analista Virtual")
+                with st.container(border=True):
+                    st.markdown(insights)
 
     # =====================================================
     # TABS DE EDA

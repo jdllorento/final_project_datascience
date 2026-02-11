@@ -208,6 +208,7 @@ elif data_source == "Cargar desde URL":
     if url:
         df = load_url(url)
 
+st.session_state.clean_df = make_columns_unique(st.session_state.clean_df)
 # =========================================
 # PROCESAMIENTO
 # =========================================
@@ -397,14 +398,28 @@ if df is not None:
 
     df_eda = st.session_state.clean_df.copy()
 
+    df_eda = st.session_state.clean_df.copy()
+    df_eda = make_columns_unique(df_eda)
+    
+    # 🔎 Verificación defensiva extra
+    if df_eda.columns.duplicated().any():
+        st.error("Existen columnas duplicadas después de la normalización.")
+        st.write(df_eda.columns[df_eda.columns.duplicated()])
+
+
     def make_columns_unique(df):
-        cols = pd.Series(df.columns)
-        for dup in cols[cols.duplicated()].unique():
-            cols[cols[cols == dup].index.values.tolist()] = [
-                f"{dup}_{i}" if i != 0 else dup
-                for i in range(sum(cols == dup))
-            ]
-        df.columns = cols
+        new_cols = []
+        counts = {}
+    
+        for col in df.columns:
+            if col in counts:
+                counts[col] += 1
+                new_cols.append(f"{col}_{counts[col]}")
+            else:
+                counts[col] = 0
+                new_cols.append(col)
+    
+        df.columns = new_cols
         return df
 
     df_eda = make_columns_unique(df_eda)
@@ -558,7 +573,9 @@ if df is not None:
 
     with tab2:
 
-        numeric_df = df_eda.select_dtypes(include=np.number)
+        numeric_df = df_eda.select_dtypes(include=np.number).copy()
+        numeric_df = make_columns_unique(numeric_df)
+
 
         if len(numeric_df.columns) > 1:
 
@@ -580,12 +597,16 @@ if df is not None:
             col_x = st.selectbox("Variable X", numeric_df.columns, key="x_var")
             col_y = st.selectbox("Variable Y", numeric_df.columns, key="y_var")
 
+            df_scatter = df_eda[[col_x, col_y]].dropna().copy()
+            df_scatter = make_columns_unique(df_scatter)
+
             fig_scatter = px.scatter(
-                df_eda,
+                df_scatter,
                 x=col_x,
                 y=col_y,
                 trendline="ols"
             )
+                
 
             st.plotly_chart(fig_scatter, use_container_width=True)
 

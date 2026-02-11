@@ -154,13 +154,14 @@ def treat_outliers(df, multiplier=1.5):
 def apply_log_transform(df, columns):
     for col in columns:
         if col in df.columns:
-            df[f"{col}_LOG"] = np.where(
-                df[col] > 0,
-                np.log1p(df[col]),
-                np.nan
-            )
+            new_col = f"{col}_LOG"
+            if new_col not in df.columns:   # 👈 evitar duplicados
+                df[new_col] = np.where(
+                    df[col] > 0,
+                    np.log1p(df[col]),
+                    np.nan
+                )
     return df
-
 
 
 def impute_data(df, method):
@@ -395,6 +396,18 @@ if df is not None:
     st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
 
     df_eda = st.session_state.clean_df.copy()
+
+    def make_columns_unique(df):
+    cols = pd.Series(df.columns)
+    for dup in cols[cols.duplicated()].unique():
+        cols[cols[cols == dup].index.values.tolist()] = [
+            f"{dup}_{i}" if i != 0 else dup
+            for i in range(sum(cols == dup))
+        ]
+    df.columns = cols
+    return df
+
+    df_eda = make_columns_unique(df_eda)
 
     # ==============================
     # FILTROS GLOBALES DINÁMICOS

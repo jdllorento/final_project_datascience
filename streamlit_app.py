@@ -398,14 +398,14 @@ if df is not None:
     df_eda = st.session_state.clean_df.copy()
 
     def make_columns_unique(df):
-    cols = pd.Series(df.columns)
-    for dup in cols[cols.duplicated()].unique():
-        cols[cols[cols == dup].index.values.tolist()] = [
-            f"{dup}_{i}" if i != 0 else dup
-            for i in range(sum(cols == dup))
-        ]
-    df.columns = cols
-    return df
+        cols = pd.Series(df.columns)
+        for dup in cols[cols.duplicated()].unique():
+            cols[cols[cols == dup].index.values.tolist()] = [
+                f"{dup}_{i}" if i != 0 else dup
+                for i in range(sum(cols == dup))
+            ]
+        df.columns = cols
+        return df
 
     df_eda = make_columns_unique(df_eda)
 

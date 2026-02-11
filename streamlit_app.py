@@ -32,19 +32,22 @@ data_source = st.sidebar.radio(
 
 
 def make_columns_unique(df):
-        new_cols = []
-        counts = {}
+    # Primero quitamos espacios en blanco de los nombres de columnas
+    df.columns = [str(c).strip() for c in df.columns]
     
-        for col in df.columns:
-            if col in counts:
-                counts[col] += 1
-                new_cols.append(f"{col}_{counts[col]}")
-            else:
-                counts[col] = 0
-                new_cols.append(col)
+    new_cols = []
+    counts = {}
     
-        df.columns = new_cols
-        return df
+    for col in df.columns:
+        if col in counts:
+            counts[col] += 1
+            new_cols.append(f"{col}_{counts[col]}")
+        else:
+            counts[col] = 0
+            new_cols.append(col)
+    
+    df.columns = new_cols
+    return df
 
 def create_financial_features(df):
 
@@ -411,16 +414,9 @@ if df is not None:
     st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
     
     if "clean_df" in st.session_state:
-        # 1. Copiamos y aseguramos que no haya duplicados de entrada
+        # 1. Creamos la copia para EDA y LIMPIAMOS columnas inmediatamente
         df_eda = st.session_state.clean_df.copy()
-        df_eda = df_eda.loc[:, ~df_eda.columns.duplicated()]
-        
-        # 2. Solo si detectamos que Pandas aún ve duplicados, aplicamos el renombrado
-        if df_eda.columns.duplicated().any():
-            df_eda = make_columns_unique(df_eda)
-    else:
-        st.info("Esperando carga de datos...")
-        st.stop() 
+        df_eda = make_columns_unique(df_eda)
 
 # A partir de aquí sigue el resto de tu código de filtros...
     

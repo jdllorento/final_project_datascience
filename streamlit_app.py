@@ -404,35 +404,35 @@ if df is not None:
     col3.metric("Valores Nulos", st.session_state.clean_df.isna().sum().sum())
 
     # =====================================================
-# MÓDULO 2 - VISUALIZACIÓN DINÁMICA (EDA)
-# =====================================================
-
-st.markdown("---")
-st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
-
-# Solo una vez y con copia limpia
-if "clean_df" in st.session_state:
-    df_eda = st.session_state.clean_df.copy()
-    # Asegurar unicidad solo si es estrictamente necesario una vez
-    df_eda = df_eda.loc[:, ~df_eda.columns.duplicated()] 
-else:
-    st.stop() # Detener si no hay datos
+    # MÓDULO 2 - VISUALIZACIÓN DINÁMICA (EDA)
+    # =====================================================
     
-    # 🔎 Verificación defensiva extra
-    if df_eda.columns.duplicated().any():
-        st.error("Existen columnas duplicadas después de la normalización.")
-        st.write(df_eda.columns[df_eda.columns.duplicated()])
-
-
-    df_eda = make_columns_unique(df_eda)
-
-    # ==============================
-    # FILTROS GLOBALES DINÁMICOS
-    # ==============================
-
-    st.subheader("🎛️ Filtros Globales")
-
-    col1, col2, col3 = st.columns(3)
+    st.markdown("---")
+    st.header("📊 Módulo 2: Visualización Dinámica (EDA)")
+    
+    # Solo una vez y con copia limpia
+    if "clean_df" in st.session_state:
+        df_eda = st.session_state.clean_df.copy()
+        # Asegurar unicidad solo si es estrictamente necesario una vez
+        df_eda = df_eda.loc[:, ~df_eda.columns.duplicated()] 
+    else:
+        st.stop() # Detener si no hay datos
+        
+        # 🔎 Verificación defensiva extra
+        if df_eda.columns.duplicated().any():
+            st.error("Existen columnas duplicadas después de la normalización.")
+            st.write(df_eda.columns[df_eda.columns.duplicated()])
+    
+    
+        df_eda = make_columns_unique(df_eda)
+    
+        # ==============================
+        # FILTROS GLOBALES DINÁMICOS
+        # ==============================
+    
+        st.subheader("🎛️ Filtros Globales")
+    
+        col1, col2, col3 = st.columns(3)
 
     # --------------------------
     # FILTRO CATEGÓRICO
@@ -653,6 +653,5 @@ else:
             st.info("No existen columnas tipo fecha en el dataset.")
 
 
-
-    else:
-        st.info("Esperando carga de datos...")
+else:
+    st.info("Esperando carga de datos...")
